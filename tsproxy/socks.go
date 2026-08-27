@@ -95,7 +95,7 @@ func (t *TsProxy) ServeSOCKS(bind, tcp4, tcp6, udp4, udp6 string) {
 		}
 
 		// If the target is a Tailscale IP or hostname, use tsnet Dial
-		if isTailscaleIPString(host) || isTailscaleHost(t.tsServer, host) {
+		if isTailscaleIPString(host) || isTailscaleHost(t.tsServer, host) || isPrivateIP(host) {
 			socksLog("Using tsnet Dial for Tailscale target: %s", raddr)
 			conn, err := tsDial(t.tsServer, network, raddr)
 			if err != nil {
@@ -218,7 +218,7 @@ func (t *TsProxy) DualSOCKS(bind, tcp4, tcp6, udp4, udp6 string) {
 	server := t.baseSOCKSConfig(bind)
 	server.DialTCP = func(network string, _, raddr string) (net.Conn, error) {
 		host, _, _ := net.SplitHostPort(raddr)
-		if isTailscaleHost(t.tsServer, host) || isTailscaleIPString(host) {
+		if isTailscaleHost(t.tsServer, host) || isTailscaleIPString(host) || isPrivateIP(host) {
 			return tsDial(t.tsServer, network, raddr)
 		}
 		ra, err := net.ResolveTCPAddr("tcp", raddr)
@@ -293,3 +293,11 @@ func (uc proxyUDPConn) LocalAddr() net.Addr                { return uc.UDPConn.L
 func (uc proxyUDPConn) SetDeadline(t time.Time) error      { return uc.UDPConn.SetDeadline(t) }
 func (uc proxyUDPConn) SetReadDeadline(t time.Time) error  { return uc.UDPConn.SetReadDeadline(t) }
 func (uc proxyUDPConn) SetWriteDeadline(t time.Time) error { return uc.UDPConn.SetWriteDeadline(t) }
+
+func isPrivateIP(host string) bool {
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsPrivate()
+}
