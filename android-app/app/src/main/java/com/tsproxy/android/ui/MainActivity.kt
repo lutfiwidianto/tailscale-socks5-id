@@ -58,7 +58,18 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(vm: MainViewModel = viewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var showConfig by remember { mutableStateOf(false) }
+    var showLuciBrowser by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
+
+    if (showLuciBrowser) {
+        val initialUrl = if (ui.tailscaleIP.isNotEmpty()) "http://${ui.tailscaleIP}" else "http://100.64.0.1"
+        LuciBrowserScreen(
+            initialUrl = initialUrl,
+            socksAddress = ui.socksAddr,
+            onClose = { showLuciBrowser = false }
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -81,6 +92,11 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         }
 
         Spacer(Modifier.height(16.dp))
+
+        // Auto Update Banner (Shown if update available or checking)
+        UpdateSection(ui, vm)
+
+        Spacer(Modifier.height(12.dp))
 
         // Status card
         Card(
@@ -124,6 +140,21 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                         Spacer(Modifier.width(4.dp))
                         Text("Berhenti")
                     }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Built-in Browser Button
+                OutlinedButton(
+                    onClick = { showLuciBrowser = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Filled.Language, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Buka Web Router (LuCI)")
                 }
             }
         }
@@ -246,6 +277,121 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
     }
 }
 
+@Composable
+fun UpdateSection(ui: UiState, vm: MainViewModel) {
+    val ctx = LocalContext.current
+    val hasUpdate = ui.updateInfo?.isNewer == true
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = if (hasUpdate) {
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        } else {
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        }
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.SystemUpdate,
+                        contentDescription = null,
+                        tint = if (hasUpdate) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Pembaruan Aplikasi",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (hasUpdate) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (!ui.checkingUpdate && !ui.downloadingUpdate) {
+                    IconButton(onClick = { vm.checkForUpdates() }) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Cek Pembaruan",
+                            tint = if (hasUpdate) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (ui.checkingUpdate) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Memeriksa rilis terbaru dari GitHub...",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            } else if (hasUpdate && ui.updateInfo != null) {
+                val release = ui.updateInfo
+                Text(
+                    "Versi baru tersedia: ${release.tagName}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                if (release.releaseNotes.isNotEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        release.releaseNotes.take(200) + if (release.releaseNotes.length > 200) "..." else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+
+                if (ui.downloadingUpdate) {
+                    Column {
+                        LinearProgressIndicator(
+                            progress = ui.downloadProgress,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "${(ui.downloadProgress * 100).toInt()}% Mengunduh APK...",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = { vm.downloadAndInstallUpdate(ctx) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Download, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Unduh & Install ${release.tagName}")
+                    }
+                }
+            } else {
+                Text(
+                    ui.updateStatusMessage.ifEmpty { "Aplikasi sudah dalam versi terbaru." },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun LogLine(
@@ -281,6 +427,7 @@ fun LogLine(
         )
     }
 }
+
 @Composable
 fun LogCard(
     title: String,

@@ -1,6 +1,7 @@
 package com.tsproxy.android.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -10,13 +11,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tsproxy.Tsproxy
+import com.tsproxy.android.BuildConfig
 import com.tsproxy.android.service.TsProxyService
 import com.tsproxy.android.TsProxyApp
+import com.tsproxy.android.util.ReleaseInfo
+import com.tsproxy.android.util.UpdateManager
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import java.io.File
 
 private val Application.dataStore by preferencesDataStore("tsproxy_prefs")
 
@@ -30,7 +34,14 @@ data class UiState(
     val logs: String = "",
     val crashLog: String = "",
     val statusText: String = "Stopped",
-    val logPaused: Boolean = false
+    val logPaused: Boolean = false,
+
+    // Auto Update states
+    val checkingUpdate: Boolean = false,
+    val updateInfo: ReleaseInfo? = null,
+    val downloadingUpdate: Boolean = false,
+    val downloadProgress: Float = 0f,
+    val updateStatusMessage: String = ""
 )
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -41,6 +52,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     init {
         loadConfig()
         startStatusPolling()
+        checkForUpdates()
     }
 
     private fun loadConfig() {
@@ -66,6 +78,64 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 hostname = hostname,
                 tsnetDir = tsnetDir
             )
+        }
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(checkingUpdate = true, updateStatusMessage = "Memeriksa pembaruan...")
+            val currentVer = try {
+                BuildConfig.VERSION_NAME
+            } catch (_: Exception) {
+                "1.0.5"
+            }
+
+            val release = UpdateManager.checkUpdate(currentVer)
+            _ui.value = _ui.value.copy(
+                checkingUpdate = false,
+                updateInfo = release,
+                updateStatusMessage = when {
+                    release == null -> "Gagal memeriksa pembaruan atau sudah versi terbaru."
+                    release.isNewer -> "Versi baru tersedia: ${release.tagName}"
+                    else -> "Aplikasi sudah versi terbaru (${currentVer})."
+                }
+            )
+        }
+    }
+
+    fun downloadAndInstallUpdate(context: Context) {
+        val release = _ui.value.updateInfo ?: return
+        if (release.downloadUrl.isEmpty()) return
+
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(
+                downloadingUpdate = true,
+                downloadProgress = 0f,
+                updateStatusMessage = "Mengunduh pembaruan ${release.tagName}..."
+            )
+
+            val cacheDir = context.externalCacheDir ?: context.cacheDir
+            val apkFile = File(cacheDir, "update_${release.versionName}.apk")
+
+            val success = UpdateManager.downloadApk(
+                downloadUrl = release.downloadUrl,
+                outputFile = apkFile
+            ) { progress ->
+                _ui.value = _ui.value.copy(downloadProgress = progress)
+            }
+
+            if (success) {
+                _ui.value = _ui.value.copy(
+                    downloadingUpdate = false,
+                    updateStatusMessage = "Unduhan selesai. Membuka installer..."
+                )
+                UpdateManager.installApk(context, apkFile)
+            } else {
+                _ui.value = _ui.value.copy(
+                    downloadingUpdate = false,
+                    updateStatusMessage = "Gagal mengunduh APK pembaruan."
+                )
+            }
         }
     }
 

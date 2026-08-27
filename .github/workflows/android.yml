@@ -119,6 +119,14 @@ jobs:
         with:
           name: tsproxy-aar
           path: android-app/app/libs/
+          merge-multiple: true
+
+      - name: Ensure AAR location
+        run: |
+          if [ -f "android-app/app/libs/tsproxy-aar/tsproxy.aar" ]; then
+            mv android-app/app/libs/tsproxy-aar/tsproxy.aar android-app/app/libs/
+          fi
+          ls -la android-app/app/libs/
 
       - name: Generate Gradle wrapper
         working-directory: android-app

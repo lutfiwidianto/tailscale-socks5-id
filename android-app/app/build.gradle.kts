@@ -11,8 +11,8 @@ android {
         applicationId = "com.tsproxy.android"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10202
-        versionName = "1.102.2"
+        versionCode = 10005
+        versionName = "1.0.5"
     }
 
     signingConfigs {
@@ -51,6 +51,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -67,7 +68,7 @@ android {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("**/*.aar", "*.aar", "*.jar"))))
 
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")
@@ -83,4 +84,5 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.webkit:webkit:1.10.0")
 }
