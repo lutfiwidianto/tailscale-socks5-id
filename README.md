@@ -1,32 +1,49 @@
-# ts-proxy-Android
+# Tailscale SOCKS5 & Remote LuCI Browser untuk Android
 
-在 Android 上运行 Tailscale userspace 代理，让 Clash 和 Tailscale 同时运行。
+Developed & Maintained by **Lutfi Widianto** ([@lutfiwidianto](https://github.com/lutfiwidianto))
 
-## 为什么需要这个
+Aplikasi Android untuk menjalankan **Tailscale Userspace SOCKS5 Proxy** sekaligus menyediakan **Built-in Web Browser** untuk meremote web interface LuCI OpenWrt dari luar jaringan tanpa bentrok dengan aplikasi VPN Inject (Clash / FlClash / gatchaNG / NekoBox / v2rayNG).
 
-Android 只能同时跑一个 VPN。Tailscale 占了 VPN slot，Clash 就没法用 TUN 模式。
+---
 
-本项目：Tailscale 用 userspace 模式跑，输出本地 SOCKS5 代理（127.0.0.1:1080），不占 VPN slot。VPN slot 留给 Clash。覆写脚本把 Tailscale 流量路由到 ts-proxy。
+## 🚀 Mengapa Menggunakan Aplikasi Ini?
 
-## 支持
+Di Android, sistem operasi hanya mengizinkan **1 slot VPN aktif**. Jika Anda menggunakan VPN Inject (seperti gatchaNG atau FlClash), Tailscale aplikasi standar tidak bisa dinyalakan karena berebut slot VPN.
 
-自定义监听端口
+Dengan proyek ini:
+1. **Tidak Memakan Slot VPN**: Tailscale berjalan di mode *userspace* dan mengeluarkan port SOCKS5 lokal (`127.0.0.1:1080`). Slot VPN Android tetap bebas digunakan oleh VPN Inject Anda.
+2. **Built-in LuCI Web Browser**: Dilengkapi browser internal bawaan yang me-route seluruh trafiknya langsung ke SOCKS5 Tailscale, mengabaikan pembajakan trafik dari VPN Inject/Chrome sehingga Anda bisa meremote web LuCI OpenWrt (`https://100.x.y.z/cgi-bin/luci/`) dengan 100% lancar.
+3. **Simpan Alamat Router Kustom**: Alamat URL LuCI rumah Anda dapat disimpan secara permanen di aplikasi.
+4. **Auto-Update In-App**: Mengecek rilis terbaru di GitHub secara otomatis dan mengunduh + menginstal APK langsung dari dalam aplikasi.
 
-自定义设备名
+---
 
-后台保活策略
+## ✨ Fitur Utama
 
-查看实时日志
+- 🌐 **SOCKS5 Proxy Local** (`127.0.0.1:1080`): Mendukung TCP & UDP forwarding untuk rute Tailscale (`100.64.0.0/10` dan subnet LAN).
+- 🌐 **Browser Internal Bawaan (LuCI Remote)**: Buka tampilan Web LuCI OpenWrt tanpa perlu browser eksternal.
+- ⚡ **Self-Signed SSL Bypass**: Penanganan otomatis sertifikat HTTPS self-signed pada OpenWrt.
+- 💾 **Penyimpanan Alamat Router**: Simpan URL default LuCI Anda (contoh: `https://100.73.70.18/cgi-bin/luci/`).
+- 🔄 **In-App Auto Update**: Pembaruan otomatis APK langsung dari GitHub Releases.
+- 🔋 **Pengaturan Background Keep-Alive**: Bypass optimasi baterai dan notifikasi persisten agar service tetap aktif di latar belakang.
+- 📝 **Live Logs**: Tampilan log realtime Tailscale dan log aplikasi.
 
-## 安装
+---
 
-1. 从 [Releases](../../releases) 下载最新 APK
-2. 打开 App，点「启动」，浏览器完成 Tailscale 授权
-3. 在 FlClash 添加覆写脚本（见下方）
+## 📥 Cara Instalasi
 
-## FlClash 覆写脚本
+1. Unduh APK rilis terbaru dari halaman [Releases](../../releases).
+2. Buka aplikasi, lalu tekan **Mulai**.
+3. Jika pertama kali menginstal, tekan **Buka Link Login** untuk melakukan otorisasi perangkat Tailscale Anda di browser.
+4. Tekan tombol **Buka Web Router (LuCI)** untuk langsung meremote OpenWrt Anda!
 
-第一步：工具 → 进阶配置 → 脚本 → 添加 → 粘贴：
+---
+
+## 📜 FlClash / Clash Overwrite Script
+
+Jika Anda ingin mengarahkan trafik Tailscale dari aplikasi lain melalui Clash/FlClash, gunakan script overwrite berikut:
+
+*Masuk ke menu FlClash: **Tools -> Advanced Config -> Script -> Tambah**:*
 
 ```js
 const main = (config) => {
@@ -48,6 +65,7 @@ const main = (config) => {
     "DOMAIN-SUFFIX,derp.tailscale.com,Tailscale",
     "DOMAIN-SUFFIX,ts.net,Tailscale",
     "IP-CIDR,100.64.0.0/10,Tailscale,no-resolve",
+    "IP-CIDR,192.168.1.0/24,Tailscale,no-resolve",
     "IP-CIDR,fd7a:115c:a1e0::/48,Tailscale,no-resolve",
   ];
   const existing = new Set(config.rules.map(r => r.trim()));
@@ -67,54 +85,59 @@ const main = (config) => {
 };
 ```
 
-第二步：配置 → 右上角菜单 → 更多 → 覆写 → 脚本 → 选择此脚本
+---
 
-## 工作原理
+## 🏗️ Cara Kerja Arsitektur
 
+```text
+HP Android (VPN Slot dipakai gatchaNG / Clash)
+  │
+  ├─ Browser Bawaan App / Aplikasi → SOCKS5 Proxy (127.0.0.1:1080)
+  │                                        │
+  │                                 ts-proxy (Userspace)
+  │                                        │
+  └───────────────────────────────> Router OpenWrt LuCI (100.x.y.z)
 ```
-App → Clash TUN (全局代理)
-        └→ ts-proxy (127.0.0.1:1080, SOCKS5)
-              └→ Tailscale 网络 (WireGuard)
-```
 
-## 开发
+---
 
-### 从源码编译
+## 🛠️ Kompilasi dari Source
+
+### Persyaratan:
+- Go 1.24+
+- Android NDK (r26+)
+- `gomobile`
 
 ```bash
-# 需要 Go 1.24+, Android NDK, gomobile
+# Install gomobile
 go install golang.org/x/mobile/cmd/gomobile@latest
 go install golang.org/x/mobile/cmd/gobind@latest
 
-git clone https://github.com/0xKrito/tailscale-socks5-Android.git
-cd tailscale-socks5-Android
-go get golang.org/x/mobile/bind@latest
-go mod tidy
+# Clone repository
+git clone https://github.com/lutfiwidianto/tailscale-socks5-id.git
+cd tailscale-socks5-id
+
+# Build AAR
 gomobile init
 gomobile bind -ldflags="-checklinkname=0 -s -w" -target=android -androidapi=26 -o android-app/app/libs/tsproxy.aar ./mobile/
 
-# 编译 APK
-cd android-app && ./gradlew assembleDebug
+# Build APK
+cd android-app
+./gradlew assembleRelease
 ```
 
-### GitHub Actions
+---
 
-CI 自动编译 AAR + APK。触发方式：push tag `v*` 或手动 dispatch。
+## 🙏 Kredit & Pengembang
 
-### Tailscale Android 补丁
-
-CI 编译时自动打以下补丁：
-- netmon/state.go: `net.Interfaces()` → `anet.Interfaces()` (修复 Android SDK≥30 netlink 权限)
-- tsnet/tsnet.go: 添加 `os.Executable()` Android fallback
-- ipn/localapi: 启用 ACME 证书功能
-
-## 致谢
-
-- [ts-proxy](https://github.com/ge9/ts-proxy) by ge9
+- **Pengembang Utama**: [Lutfi Widianto](https://github.com/lutfiwidianto)
+- Based on original concept by [0xKrito/tailscale-socks5-Android](https://github.com/0xKrito/tailscale-socks5-Android) & [ge9/ts-proxy](https://github.com/ge9/ts-proxy)
 - [txthinking/socks5](https://github.com/txthinking/socks5)
-- [wlynxg/anet](https://github.com/wlynxg/anet) (Android net 接口修复)
-- [tailscale.com](https://github.com/tailscale/tailscale)
+- [wlynxg/anet](https://github.com/wlynxg/anet)
+- [Tailscale](https://github.com/tailscale/tailscale)
 
-## License
+---
 
-见 [LICENSE](LICENSE) 文件。
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah [BSD-3-Clause License](LICENSE).
