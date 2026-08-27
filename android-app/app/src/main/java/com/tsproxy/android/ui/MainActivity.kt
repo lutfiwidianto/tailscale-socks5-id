@@ -62,7 +62,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
     val ctx = LocalContext.current
 
     if (showLuciBrowser) {
-        val initialUrl = if (ui.tailscaleIP.isNotEmpty()) "http://${ui.tailscaleIP}" else "http://100.64.0.1"
+        val initialUrl = ui.luciUrl.ifEmpty { "https://100.73.70.18/cgi-bin/luci/" }
         LuciBrowserScreen(
             initialUrl = initialUrl,
             socksAddress = ui.socksAddr,
@@ -517,11 +517,13 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
     var socks by remember { mutableStateOf(ui.socksAddr) }
     var hostname by remember { mutableStateOf(ui.hostname) }
     var tsnetDir by remember { mutableStateOf(ui.tsnetDir) }
+    var luciUrl by remember { mutableStateOf(ui.luciUrl) }
 
-    LaunchedEffect(ui.socksAddr, ui.hostname, ui.tsnetDir) {
+    LaunchedEffect(ui.socksAddr, ui.hostname, ui.tsnetDir, ui.luciUrl) {
         socks = ui.socksAddr
         hostname = ui.hostname
         tsnetDir = ui.tsnetDir
+        luciUrl = ui.luciUrl
     }
 
     Card(
@@ -534,6 +536,16 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
                 "Konfigurasi Dasar",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = luciUrl,
+                onValueChange = { luciUrl = it },
+                label = { Text("Alamat Web Router / LuCI Default") },
+                placeholder = { Text("Contoh: https://100.73.70.18/cgi-bin/luci/") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
 
@@ -569,7 +581,7 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
             Spacer(Modifier.height(12.dp))
 
             Button(
-                onClick = { vm.saveConfig(socks, hostname, tsnetDir) },
+                onClick = { vm.saveConfig(socks, hostname, tsnetDir, luciUrl) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Filled.Save, null)

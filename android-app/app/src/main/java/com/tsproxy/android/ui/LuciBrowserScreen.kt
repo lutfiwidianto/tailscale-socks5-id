@@ -129,12 +129,11 @@ fun LuciBrowserScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         AssistChip(
                             onClick = {
-                                val url = "http://100.64.0.1"
-                                urlText = url
-                                currentUrl = url
-                                webViewRef?.loadUrl(url)
+                                urlText = initialUrl
+                                currentUrl = initialUrl
+                                webViewRef?.loadUrl(initialUrl)
                             },
-                            label = { Text("http://100.64.0.1") }
+                            label = { Text(initialUrl.take(28) + if (initialUrl.length > 28) "..." else "") }
                         )
                     }
                 }

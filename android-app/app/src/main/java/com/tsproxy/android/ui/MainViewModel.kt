@@ -29,6 +29,7 @@ data class UiState(
     val socksAddr: String = "127.0.0.1:1080",
     val hostname: String = "ts-socks5",
     val tsnetDir: String = "",
+    val luciUrl: String = "https://100.73.70.18/cgi-bin/luci/",
     val tailscaleIP: String = "",
     val loginUrl: String = "",
     val logs: String = "",
@@ -61,22 +62,25 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _ui.value = _ui.value.copy(
                 socksAddr = prefs[SOCKS_KEY] ?: "127.0.0.1:1080",
                 hostname = prefs[HOSTNAME_KEY] ?: "ts-socks5",
-                tsnetDir = prefs[TSNETDIR_KEY] ?: ""
+                tsnetDir = prefs[TSNETDIR_KEY] ?: "",
+                luciUrl = prefs[LUCI_URL_KEY] ?: "https://100.73.70.18/cgi-bin/luci/"
             )
         }
     }
 
-    fun saveConfig(socks: String, hostname: String, tsnetDir: String) {
+    fun saveConfig(socks: String, hostname: String, tsnetDir: String, luciUrl: String) {
         viewModelScope.launch {
             getApplication<Application>().dataStore.edit { prefs ->
                 prefs[SOCKS_KEY] = socks
                 prefs[HOSTNAME_KEY] = hostname
                 prefs[TSNETDIR_KEY] = tsnetDir
+                prefs[LUCI_URL_KEY] = luciUrl
             }
             _ui.value = _ui.value.copy(
                 socksAddr = socks,
                 hostname = hostname,
-                tsnetDir = tsnetDir
+                tsnetDir = tsnetDir,
+                luciUrl = luciUrl
             )
         }
     }
@@ -218,5 +222,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         private val SOCKS_KEY = stringPreferencesKey("socks_addr")
         private val HOSTNAME_KEY = stringPreferencesKey("hostname")
         private val TSNETDIR_KEY = stringPreferencesKey("tsnet_dir")
+        private val LUCI_URL_KEY = stringPreferencesKey("luci_url")
     }
 }
