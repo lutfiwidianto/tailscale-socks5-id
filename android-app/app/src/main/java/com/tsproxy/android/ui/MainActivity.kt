@@ -163,7 +163,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text(
-                        "需要 Tailscale 认证",
+                        "Butuh Otorisasi Tailscale",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -180,7 +180,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
             Spacer(Modifier.height(12.dp))
         }
 
-        // ts日志 — scrollable, newest first, with pause and copy
+        // Log Tailscale — scrollable, newest first, with pause and copy
         val logLines = remember(ui.logs) {
             if (ui.logs.isEmpty()) emptyList()
             else ui.logs.split("\n").filter { it.isNotEmpty() }.reversed()
@@ -207,7 +207,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                 Toast.makeText(ctx, "Berhasil menyalin ${displayLogs.size} log", Toast.LENGTH_SHORT).show()
             },
             onCopyLine = { line ->
-                clipboardManager.setPrimaryClip(ClipData.newPlainText("日志", line))
+                clipboardManager.setPrimaryClip(ClipData.newPlainText("Log", line))
                 Toast.makeText(ctx, "Berhasil disalin", Toast.LENGTH_SHORT).show()
             },
             haptics = haptics,
@@ -216,7 +216,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
 
         Spacer(Modifier.height(12.dp))
 
-        // 程序日志 — scrollable with copy
+        // Log Aplikasi — scrollable with copy
         val crashLines = remember(ui.crashLog) {
             if (ui.crashLog.isEmpty()) emptyList()
             else ui.crashLog.trim().split("\n").filter { it.isNotEmpty() }
@@ -235,7 +235,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                     Toast.makeText(ctx, "Berhasil menyalin ${crashLines.size} log", Toast.LENGTH_SHORT).show()
                 },
                 onCopyLine = { line ->
-                    clipboardManager.setPrimaryClip(ClipData.newPlainText("日志", line))
+                    clipboardManager.setPrimaryClip(ClipData.newPlainText("Log", line))
                     Toast.makeText(ctx, "Berhasil disalin", Toast.LENGTH_SHORT).show()
                 },
                 haptics = haptics,
@@ -384,7 +384,7 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "基本配置",
+                "Konfigurasi Dasar",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -433,7 +433,7 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
             Spacer(Modifier.height(8.dp))
 
             Text(
-                "Clash 配置参考: 将 100.64.0.0/10 和 fd7a:115c:a1e0::/48 路由到 socks5://127.0.0.1:1080",
+                "Referensi Clash: Rute 100.64.0.0/10 dan fd7a:115c:a1e0::/48 ke SOCKS5 127.0.0.1:1080",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -466,7 +466,7 @@ fun SettingsSection() {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "保活设置",
+                "Pengaturan Latar Belakang (Keep-Alive)",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -480,7 +480,7 @@ fun SettingsSection() {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "电池优化",
+                        "Optimasi Baterai",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -533,12 +533,12 @@ fun SettingsSection() {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "常驻通知",
+                        "Notifikasi Persisten",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        "确保通知不可被系统清除",
+                        "Pastikan notifikasi tidak dapat dihapus oleh sistem",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
