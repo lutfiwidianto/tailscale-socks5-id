@@ -30,10 +30,10 @@ class TsProxyApp : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "ts-socks5 service",
+                "Layanan ts-socks5",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Tailscale proxy running"
+                description = "Proxy Tailscale berjalan"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)

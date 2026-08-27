@@ -67,7 +67,7 @@ class TsProxyService : Service() {
     }
 
     private fun startProxy(socks: String, hostname: String, tsnetDir: String) {
-        val notification = buildNotification("Starting ts-socks5...")
+        val notification = buildNotification("Memulai ts-socks5...")
         startForeground(NOTIFICATION_ID, notification)
 
         acquireWakeLock()
@@ -83,7 +83,7 @@ class TsProxyService : Service() {
                 val result = Tsproxy.start(socks, hostname, resolvedDir)
                 val status = when {
                     result.startsWith("ERROR:") -> "Failed: ${result.removePrefix("ERROR: ").take(80)}"
-                    else -> "Running on $socks"
+                    else -> "Berjalan di $socks"
                 }
                 TsProxyApp.appendLog("Tsproxy.start returned: $status")
                 updateNotification(status)
