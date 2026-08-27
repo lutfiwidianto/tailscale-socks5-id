@@ -111,15 +111,35 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val release = _ui.value.updateInfo ?: return
         if (release.downloadUrl.isEmpty()) return
 
+        // 1. Check permission FIRST before starting any download
+        if (!UpdateManager.hasInstallPermission(context)) {
+            _ui.value = _ui.value.copy(
+                updateStatusMessage = "Silakan aktifkan 'Izinkan dari sumber ini' terlebih dahulu."
+            )
+            UpdateManager.requestInstallPermission(context)
+            return
+        }
+
         viewModelScope.launch {
+            val cacheDir = context.externalCacheDir ?: context.cacheDir
+            val apkFile = File(cacheDir, "update_${release.versionName}.apk")
+
+            // 2. Reuse already downloaded APK file to save data quota
+            if (apkFile.exists() && apkFile.length() > 50_000_000L) {
+                _ui.value = _ui.value.copy(
+                    downloadingUpdate = false,
+                    updateStatusMessage = "File APK sudah tersedia. Membuka installer..."
+                )
+                UpdateManager.installApk(context, apkFile)
+                return@launch
+            }
+
+            // 3. Otherwise start download
             _ui.value = _ui.value.copy(
                 downloadingUpdate = true,
                 downloadProgress = 0f,
                 updateStatusMessage = "Mengunduh pembaruan ${release.tagName}..."
             )
-
-            val cacheDir = context.externalCacheDir ?: context.cacheDir
-            val apkFile = File(cacheDir, "update_${release.versionName}.apk")
 
             val success = UpdateManager.downloadApk(
                 downloadUrl = release.downloadUrl,

@@ -64,9 +64,11 @@ object UpdateManager {
                 val asset = assets.getJSONObject(i)
                 val name = asset.optString("name", "")
                 val browserDownloadUrl = asset.optString("browser_download_url", "")
-                if (name.endsWith(".apk", ignoreCase = true)) {
+                if (name.endsWith("release.apk", ignoreCase = true)) {
                     apkUrl = browserDownloadUrl
                     break
+                } else if (name.endsWith(".apk", ignoreCase = true) && apkUrl.isEmpty()) {
+                    apkUrl = browserDownloadUrl
                 }
             }
 
@@ -105,6 +107,33 @@ object UpdateManager {
             }
         }
         return 0
+    }
+
+    fun hasInstallPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.packageManager.canRequestPackageInstalls()
+        } else {
+            true
+        }
+    }
+
+    fun requestInstallPermission(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Toast.makeText(
+                context,
+                "Aktifkan 'Izinkan dari sumber ini' terlebih dahulu sebelum mengunduh pembaruan.",
+                Toast.LENGTH_LONG
+            ).show()
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     suspend fun downloadApk(
@@ -180,20 +209,9 @@ object UpdateManager {
             return
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!context.packageManager.canRequestPackageInstalls()) {
-                Toast.makeText(
-                    context,
-                    "Izinkan instalasi dari sumber ini untuk melanjutkan pembaruan.",
-                    Toast.LENGTH_LONG
-                ).show()
-                val settingIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(settingIntent)
-                return
-            }
+        if (!hasInstallPermission(context)) {
+            requestInstallPermission(context)
+            return
         }
 
         try {
