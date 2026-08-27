@@ -2,6 +2,8 @@ package com.tsproxy.android.ui
 
 import android.annotation.SuppressLint
 import android.net.http.SslError
+import android.view.View
+import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -15,8 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
@@ -27,7 +30,7 @@ import java.util.concurrent.Executors
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun LuciBrowserScreen(
-    initialUrl: String = "http://100.64.0.1",
+    initialUrl: String = "https://100.73.70.18/cgi-bin/luci/",
     socksAddress: String = "127.0.0.1:1080",
     onClose: () -> Unit
 ) {
@@ -44,12 +47,12 @@ fun LuciBrowserScreen(
                 val cleanAddr = socksAddress.removePrefix("http://").removePrefix("socks5://")
                 val proxyConfig = ProxyConfig.Builder()
                     .addProxyRule("socks5://$cleanAddr")
-                    .addProxyRule("direct://")
+                    .addDirect()
                     .build()
                 val executor = Executors.newSingleThreadExecutor()
-                ProxyController.getInstance().setProxyOverride(proxyConfig, executor) {
+                ProxyController.getInstance().setProxyOverride(proxyConfig, executor, Runnable {
                     // Proxy applied callback
-                }
+                })
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -61,104 +64,112 @@ fun LuciBrowserScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top Toolbar & Address Bar
+        // Ultra-Compact Single Row Toolbar
         Surface(
-            tonalElevation = 4.dp,
-            shadowElevation = 4.dp,
+            tonalElevation = 2.dp,
+            shadowElevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(Modifier.padding(8.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth()
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
+            ) {
+                // Close button
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = "Tutup Browser")
-                    }
-
-                    OutlinedTextField(
-                        value = urlText,
-                        onValueChange = { urlText = it },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        placeholder = { Text("http://100.x.y.z atau http://192.168.1.1") },
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                var formatted = urlText.trim()
-                                if (!formatted.startsWith("http://") && !formatted.startsWith("https://")) {
-                                    formatted = "http://$formatted"
-                                }
-                                currentUrl = formatted
-                                urlText = formatted
-                                webViewRef?.loadUrl(formatted)
-                            }) {
-                                Icon(Icons.Filled.ArrowForward, contentDescription = "Buka URL")
-                            }
-                        }
-                    )
+                    Icon(Icons.Filled.Close, contentDescription = "Tutup", modifier = Modifier.size(20.dp))
                 }
 
-                Spacer(Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Back button
+                IconButton(
+                    onClick = { webViewRef?.goBack() },
+                    enabled = webViewRef?.canGoBack() == true,
+                    modifier = Modifier.size(32.dp)
                 ) {
-                    Row {
-                        IconButton(
-                            onClick = { webViewRef?.goBack() },
-                            enabled = webViewRef?.canGoBack() == true
-                        ) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Kembali")
-                        }
-                        IconButton(
-                            onClick = { webViewRef?.goForward() },
-                            enabled = webViewRef?.canGoForward() == true
-                        ) {
-                            Icon(Icons.Filled.ArrowForward, contentDescription = "Maju")
-                        }
-                        IconButton(
-                            onClick = { webViewRef?.reload() }
-                        ) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Muat Ulang")
-                        }
-                    }
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Kembali", modifier = Modifier.size(18.dp))
+                }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        AssistChip(
-                            onClick = {
-                                urlText = initialUrl
-                                currentUrl = initialUrl
-                                webViewRef?.loadUrl(initialUrl)
-                            },
-                            label = { Text(initialUrl.take(28) + if (initialUrl.length > 28) "..." else "") }
-                        )
-                    }
+                // Forward button
+                IconButton(
+                    onClick = { webViewRef?.goForward() },
+                    enabled = webViewRef?.canGoForward() == true,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Filled.ArrowForward, contentDescription = "Maju", modifier = Modifier.size(18.dp))
+                }
+
+                // Refresh button
+                IconButton(
+                    onClick = { webViewRef?.reload() },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = "Muat Ulang", modifier = Modifier.size(18.dp))
+                }
+
+                // Compact URL Field
+                OutlinedTextField(
+                    value = urlText,
+                    onValueChange = { urlText = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    textStyle = TextStyle(fontSize = 12.sp),
+                    singleLine = true,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                // Go button
+                IconButton(
+                    onClick = {
+                        var formatted = urlText.trim()
+                        if (!formatted.startsWith("http://") && !formatted.startsWith("https://")) {
+                            formatted = "https://$formatted"
+                        }
+                        currentUrl = formatted
+                        urlText = formatted
+                        webViewRef?.loadUrl(formatted)
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = "Buka", modifier = Modifier.size(20.dp))
                 }
             }
         }
 
         if (isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
         }
 
-        // Embedded WebView
+        // High-Performance Embedded WebView
         AndroidView(
             factory = { ctx ->
                 WebView(ctx).apply {
                     webViewRef = this
+                    setLayerType(View.LAYER_TYPE_HARDWARE, null)
+
+                    // Enable Cookies
+                    CookieManager.getInstance().apply {
+                        setAcceptCookie(true)
+                        setAcceptThirdPartyCookies(this@apply, true)
+                    }
+
                     settings.apply {
                         javaScriptEnabled = true
                         domStorageEnabled = true
                         databaseEnabled = true
+                        cacheMode = WebSettings.LOAD_DEFAULT // Fast static asset caching (CSS, JS)
                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         useWideViewPort = true
                         loadWithOverviewMode = true
                         setSupportZoom(true)
                         builtInZoomControls = true
                         displayZoomControls = false
+                        javaScriptCanOpenWindowsAutomatically = true
                     }
 
                     webViewClient = object : WebViewClient() {
