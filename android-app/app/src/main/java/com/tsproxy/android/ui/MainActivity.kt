@@ -90,12 +90,12 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
             )
         ) {
             Column(Modifier.padding(16.dp)) {
-                StatusRow("状态", ui.statusText)
+                StatusRow("Status", ui.statusText)
                 if (ui.tailscaleIP.isNotEmpty()) {
                     StatusRow("Tailscale IP", ui.tailscaleIP)
                 }
                 StatusRow("SOCKS5", ui.socksAddr)
-                StatusRow("主机名", ui.hostname)
+                StatusRow("Nama Host (Device Name)", ui.hostname)
 
                 Spacer(Modifier.height(12.dp))
 
@@ -110,7 +110,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                     ) {
                         Icon(Icons.Filled.PlayArrow, null)
                         Spacer(Modifier.width(4.dp))
-                        Text("启动")
+                        Text("Mulai")
                     }
                     Button(
                         onClick = { vm.stopProxy() },
@@ -122,7 +122,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                     ) {
                         Icon(Icons.Filled.Stop, null)
                         Spacer(Modifier.width(4.dp))
-                        Text("停止")
+                        Text("Berhenti")
                     }
                 }
             }
@@ -140,7 +140,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                 null
             )
             Spacer(Modifier.width(4.dp))
-            Text("配置")
+            Text("Konfigurasi")
         }
 
         AnimatedVisibility(showConfig) {
@@ -173,7 +173,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                     }) {
                         Icon(Icons.Filled.OpenInBrowser, null)
                         Spacer(Modifier.width(4.dp))
-                        Text("打开登录链接")
+                        Text("Buka Link Login")
                     }
                 }
             }
@@ -196,19 +196,19 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         val haptics = LocalHapticFeedback.current
 
         LogCard(
-            title = "ts日志 (${displayLogs.size})",
+            title = "Log Tailscale (${displayLogs.size})",
             lines = displayLogs,
             onClear = { vm.clearLogs() },
             onPauseToggle = { vm.toggleLogPause() },
             paused = ui.logPaused,
             onCopyAll = {
                 val text = displayLogs.joinToString("\n")
-                clipboardManager.setPrimaryClip(ClipData.newPlainText("ts日志", text))
-                Toast.makeText(ctx, "已复制 ${displayLogs.size} 条日志", Toast.LENGTH_SHORT).show()
+                clipboardManager.setPrimaryClip(ClipData.newPlainText("Log Tailscale", text))
+                Toast.makeText(ctx, "Berhasil menyalin ${displayLogs.size} log", Toast.LENGTH_SHORT).show()
             },
             onCopyLine = { line ->
                 clipboardManager.setPrimaryClip(ClipData.newPlainText("日志", line))
-                Toast.makeText(ctx, "已复制", Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, "Berhasil disalin", Toast.LENGTH_SHORT).show()
             },
             haptics = haptics,
             containerColor = null // default
@@ -224,19 +224,19 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
 
         if (crashLines.isNotEmpty()) {
             LogCard(
-                title = "程序日志 (${crashLines.size})",
+                title = "Log Aplikasi (${crashLines.size})",
                 lines = crashLines,
                 onClear = { vm.clearCrashLog() },
                 onPauseToggle = null, // no pause for program log
                 paused = false,
                 onCopyAll = {
                     val text = crashLines.joinToString("\n")
-                    clipboardManager.setPrimaryClip(ClipData.newPlainText("程序日志", text))
-                    Toast.makeText(ctx, "已复制 ${crashLines.size} 条日志", Toast.LENGTH_SHORT).show()
+                    clipboardManager.setPrimaryClip(ClipData.newPlainText("Log Aplikasi", text))
+                    Toast.makeText(ctx, "Berhasil menyalin ${crashLines.size} log", Toast.LENGTH_SHORT).show()
                 },
                 onCopyLine = { line ->
                     clipboardManager.setPrimaryClip(ClipData.newPlainText("日志", line))
-                    Toast.makeText(ctx, "已复制", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, "Berhasil disalin", Toast.LENGTH_SHORT).show()
                 },
                 haptics = haptics,
                 containerColor = MaterialTheme.colorScheme.errorContainer
@@ -316,14 +316,14 @@ fun LogCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onPauseToggle != null) {
                         TextButton(onClick = onPauseToggle) {
-                            Text(if (paused) "继续" else "暂停")
+                            Text(if (paused) "Lanjutkan" else "Jeda")
                         }
                     }
                     TextButton(onClick = onCopyAll) {
-                        Text("复制")
+                        Text("Salin")
                     }
                     TextButton(onClick = onClear) {
-                        Text("清除")
+                        Text("Bersihkan")
                     }
                 }
             }
@@ -331,7 +331,7 @@ fun LogCard(
 
             if (lines.isEmpty()) {
                 Text(
-                    if (paused) "已暂停，点击继续刷新" else "无日志",
+                    if (paused) "Dijeda, klik lanjutkan untuk memuat ulang" else "Tidak ada log",
                     fontFamily = FontFamily.Monospace,
                     style = MaterialTheme.typography.bodySmall,
                     color = if (containerColor != null) MaterialTheme.colorScheme.onErrorContainer
@@ -393,8 +393,8 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
             OutlinedTextField(
                 value = socks,
                 onValueChange = { socks = it },
-                label = { Text("SOCKS5 监听地址") },
-                placeholder = { Text("127.0.0.1:1080") },
+                label = { Text("Alamat Listen SOCKS5") },
+                placeholder = { Text("Contoh: 127.0.0.1:1080") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -403,8 +403,8 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
             OutlinedTextField(
                 value = hostname,
                 onValueChange = { hostname = it },
-                label = { Text("Tailscale 设备名") },
-                placeholder = { Text("ts-socks5") },
+                label = { Text("Nama Perangkat Tailscale") },
+                placeholder = { Text("Contoh: ts-socks5") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -413,8 +413,8 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
             OutlinedTextField(
                 value = tsnetDir,
                 onValueChange = { tsnetDir = it },
-                label = { Text("tsnet 数据目录 (可选)") },
-                placeholder = { Text("默认: 自动") },
+                label = { Text("Direktori Data tsnet (Opsional)") },
+                placeholder = { Text("Default: Otomatis") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -427,7 +427,7 @@ fun ConfigSection(ui: UiState, vm: MainViewModel) {
             ) {
                 Icon(Icons.Filled.Save, null)
                 Spacer(Modifier.width(4.dp))
-                Text("保存配置")
+                Text("Simpan Konfigurasi")
             }
 
             Spacer(Modifier.height(8.dp))
@@ -485,7 +485,7 @@ fun SettingsSection() {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        if (batteryIgnored) "已豁免" else "未豁免，可能被系统杀后台",
+                        if (batteryIgnored) "Diizinkan (Bypass)" else "Tidak diizinkan, aplikasi mungkin mati di background",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (batteryIgnored)
                             MaterialTheme.colorScheme.primary
@@ -511,7 +511,7 @@ fun SettingsSection() {
                             containerColor = MaterialTheme.colorScheme.secondary
                         )
                     ) {
-                        Text("设置", style = MaterialTheme.typography.labelMedium)
+                        Text("Pengaturan", style = MaterialTheme.typography.labelMedium)
                     }
                 } else {
                     Icon(
@@ -562,7 +562,7 @@ fun SettingsSection() {
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
                 ) {
-                    Text("设置", style = MaterialTheme.typography.labelMedium)
+                    Text("Pengaturan", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -573,7 +573,7 @@ fun SettingsSection() {
 fun StatusBadge(running: Boolean) {
     val color = if (running) MaterialTheme.colorScheme.primary
     else MaterialTheme.colorScheme.error
-    val text = if (running) "运行中" else "已停止"
+    val text = if (running) "Berjalan" else "Berhenti"
 
     Surface(
         shape = MaterialTheme.shapes.small,

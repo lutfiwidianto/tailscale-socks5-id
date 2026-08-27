@@ -72,7 +72,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun startProxy() {
         val ctx = getApplication<Application>()
         val state = _ui.value
-        _ui.value = _ui.value.copy(statusText = "Starting...")
+        _ui.value = _ui.value.copy(statusText = "Memulai...")
         TsProxyApp.appendLog("UI: startProxy clicked, socks=${state.socksAddr} host=${state.hostname}")
         try {
             TsProxyService.start(ctx, state.socksAddr, state.hostname, state.tsnetDir)
@@ -89,7 +89,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun stopProxy() {
         val ctx = getApplication<Application>()
-        _ui.value = _ui.value.copy(statusText = "Stopping...")
+        _ui.value = _ui.value.copy(statusText = "Menghentikan...")
         TsProxyApp.appendLog("UI: stopProxy clicked")
         try {
             TsProxyService.stop(ctx)
@@ -126,8 +126,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     val crashLog = TsProxyApp.readCrashLog()
                     val url = Tsproxy.getLoginURL() ?: ""
                     val newStatus = when {
-                        running -> "Running"
-                        url.isNotEmpty() -> "需要授权"
+                        running -> "Berjalan"
+                        url.isNotEmpty() -> "Butuh Otorisasi"
                         else -> _ui.value.statusText
                     }
                     _ui.value = _ui.value.copy(
